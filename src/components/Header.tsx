@@ -1,0 +1,66 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Trello, LogOut, User } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+
+interface HeaderProps {
+  showBackButton?: boolean;
+  onBack?: () => void;
+}
+
+export function Header({
+  showBackButton = false,
+  onBack
+}: HeaderProps): React.ReactElement {
+  const { userId, logout } = useAuth();
+  const navigate = useNavigate();
+
+  function handleBack() {
+    if (onBack) {
+      onBack();
+    } else {
+      navigate('/');
+    }
+  }
+
+  return (
+    <header className="bg-slate-800 border-b border-slate-700 px-6 py-4 shadow-lg">
+      <div className="flex items-center justify-between">
+        {/* Left side - Logo and Back button */}
+        <div className="flex items-center space-x-4">
+          {showBackButton && (
+            <button
+              onClick={handleBack}
+              className="text-gray-400 hover:bg-slate-700 p-2 rounded-lg transition-colors"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+
+          <div className="flex items-center space-x-3">
+            <Trello className="h-8 w-8 text-blue-400" />
+            <h1 className="text-2xl font-bold text-gray-100">Trecco</h1>
+          </div>
+        </div>
+
+        {/* Right side - User info and logout */}
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 text-sm text-gray-400">
+            <User className="h-4 w-4" />
+            <span>User: {userId?.substring(0, 8)}...</span>
+          </div>
+
+          <button
+            onClick={logout}
+            className="flex items-center space-x-2 px-3 py-2 text-gray-400 hover:text-gray-100 transition-colors hover:bg-slate-700 rounded-lg"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+};
