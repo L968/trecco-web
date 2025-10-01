@@ -8,6 +8,13 @@ export interface Board {
   lastUpdate: string;
 }
 
+export interface BoardActionLog {
+  id: string;
+  userId: string;
+  details: string;
+  timestamp: string;
+}
+
 export interface List {
   id: string;
   name: string;

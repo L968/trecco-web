@@ -1,4 +1,4 @@
-import { Board, CreateBoardRequest, CreateListRequest, CreateCardRequest, UpdateCardRequest, MoveCardRequest, AddMemberRequest } from '../types';
+import { Board, CreateBoardRequest, CreateListRequest, CreateCardRequest, UpdateCardRequest, MoveCardRequest, AddMemberRequest, BoardActionLog } from '../types';
 
 const API_BASE_URL = 'https://localhost:7035';
 
@@ -29,6 +29,18 @@ class ApiService {
 
   async getBoard(boardId: string, userId: string): Promise<Board> {
     const response = await fetch(`${API_BASE_URL}/boards/${boardId}`, {
+      headers: this.getHeaders(userId),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async getBoardLogs(boardId: string, userId: string): Promise<BoardActionLog[]> {
+    const response = await fetch(`${API_BASE_URL}/boards/${boardId}/action-logs`, {
       headers: this.getHeaders(userId),
     });
 

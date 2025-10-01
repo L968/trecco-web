@@ -49,6 +49,19 @@ export class SignalRService {
       }
     );
 
+    this.connection.on(
+      'BoardLogged',
+      (id: string, userId: string, details: string, timestamp: string) => {
+        console.log('SignalR BoardLogged recebido:', { id, userId, details, timestamp });
+
+        window.dispatchEvent(
+          new CustomEvent('signalr-board-logged', {
+            detail: { id, userId, details, timestamp },
+          })
+        );
+      }
+    );
+
     this.connection.onclose((error) => {
       console.log('SignalR connection closed:', error);
     });

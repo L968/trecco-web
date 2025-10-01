@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Clock, MoreVertical, LogOut, Wifi, WifiOff } from 'lucide-react';
+import { Users, Clock, LogOut, Wifi, WifiOff } from 'lucide-react';
 import { Board } from '../types';
 import { MembersModal } from './MembersModal';
 import { apiService } from '../services/api';
@@ -14,9 +14,13 @@ interface BoardHeaderProps {
   onLeaveBoard?: () => Promise<void>;
 }
 
-export function BoardHeader({ board, onRefresh, isConnected = false, onLeaveBoard }: BoardHeaderProps): React.ReactElement {
+export function BoardHeader({
+  board,
+  onRefresh,
+  isConnected = false,
+  onLeaveBoard
+}: BoardHeaderProps): React.ReactElement {
   const [showMembersModal, setShowMembersModal] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
   const [, tick] = useState(0);
   const { userId: currentUserId } = useAuth();
   const { execute } = useApi();
@@ -52,10 +56,7 @@ export function BoardHeader({ board, onRefresh, isConnected = false, onLeaveBoar
 
   async function handleLeaveBoard() {
     if (currentUserId && currentUserId !== board.ownerUserId) {
-      if (onLeaveBoard) {
-        await onLeaveBoard();
-      }
-
+      if (onLeaveBoard) await onLeaveBoard();
       await execute(() => apiService.removeMember(board.id, currentUserId, currentUserId));
       navigate('/');
     }
@@ -96,59 +97,31 @@ export function BoardHeader({ board, onRefresh, isConnected = false, onLeaveBoar
           </div>
 
           {/* SignalR Connection Status */}
-          <div className={`flex items-center space-x-2 text-sm px-3 py-1 rounded-full ${
-            isConnected
-              ? 'bg-green-900 text-green-400'
-              : 'bg-red-900 text-red-400'
-          }`}>
-            {isConnected ? (
-              <Wifi className="h-4 w-4" />
-            ) : (
-              <WifiOff className="h-4 w-4" />
-            )}
+          <div
+            className={`flex items-center space-x-2 text-sm px-3 py-1 rounded-full ${
+              isConnected ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'
+            }`}
+          >
+            {isConnected ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
             <span className={isConnected ? 'text-green-300' : 'text-red-300'}>
               {isConnected ? 'Live' : 'Offline'}
             </span>
           </div>
 
-          {/* Board Actions Dropdown */}
+          {/* Leave Board */}
           {canLeaveBoard() && (
-            <div className="relative">
-              <button
-                onClick={() => setShowDropdown(!showDropdown)}
-                className="p-2 text-gray-400 hover:text-gray-200 hover:bg-slate-600 rounded-lg transition-colors"
-                title="Board actions"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </button>
-
-              {showDropdown && (
-                <>
-                  {/* Backdrop */}
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowDropdown(false)}
-                  />
-
-                  {/* Dropdown Menu */}
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-600 rounded-lg shadow-lg z-20">
-                    <button
-                      onClick={handleLeaveBoard}
-                      className="w-full flex items-center space-x-3 px-4 py-3 text-left text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors rounded-lg"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span>Leave Board</span>
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            <button
+              onClick={handleLeaveBoard}
+              className="flex items-center space-x-2 px-3 py-1 rounded-full text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors text-sm"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Leave Board</span>
+            </button>
           )}
-
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Members Modal */}
       {showMembersModal && (
         <MembersModal
           board={board}
@@ -158,4 +131,4 @@ export function BoardHeader({ board, onRefresh, isConnected = false, onLeaveBoar
       )}
     </div>
   );
-};
+}

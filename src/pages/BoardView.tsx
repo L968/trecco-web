@@ -10,6 +10,7 @@ import { List } from '../components/List';
 import { CreateListModal } from '../components/CreateListModal';
 import { Header } from '../components/Header';
 import { BoardHeader } from '../components/BoardHeader';
+import { BoardLogsPanel } from '../components/BoardLogsPanel';
 
 export function BoardView(): React.ReactElement {
   const { id } = useParams<{ id: string }>();
@@ -34,29 +35,20 @@ export function BoardView(): React.ReactElement {
       navigate('/');
       return;
     }
-
     loadBoard();
   }, [id, userId, navigate]);
 
   async function loadBoard() {
     if (!userId || !id) return;
-
     const result = await execute(() => apiService.getBoard(id, userId));
-    if (result) {
-      setBoard(result);
-    } else {
-      navigate('/');
-    }
+    if (result) setBoard(result);
+    else navigate('/');
   }
 
   function moveCardInState(prevBoard: Board | null, cardId: string, targetListId: string, targetPosition: number): Board | null {
     if (!prevBoard) return prevBoard;
-
     const newBoard = { ...prevBoard };
-    newBoard.lists = prevBoard.lists?.map(list => ({
-      ...list,
-      cards: [...(list.cards || [])]
-    })) || [];
+    newBoard.lists = prevBoard.lists?.map(list => ({ ...list, cards: [...(list.cards || [])] })) || [];
 
     let cardToMove = null;
     let sourceListIndex = -1;
@@ -66,7 +58,7 @@ export function BoardView(): React.ReactElement {
       const list = newBoard.lists[i];
       const idx = list.cards?.findIndex(c => c.id === cardId) ?? -1;
       if (idx !== -1) {
-        cardToMove = list.cards?.[idx];
+        cardToMove = list.cards[idx];
         sourceListIndex = i;
         cardIndex = idx;
         break;
@@ -79,9 +71,7 @@ export function BoardView(): React.ReactElement {
 
     const targetListIndex = newBoard.lists.findIndex(list => list.id === targetListId);
     if (targetListIndex !== -1) {
-      if (!newBoard.lists[targetListIndex].cards) {
-        newBoard.lists[targetListIndex].cards = [];
-      }
+      if (!newBoard.lists[targetListIndex].cards) newBoard.lists[targetListIndex].cards = [];
       if (targetPosition === -1 || targetPosition >= newBoard.lists[targetListIndex].cards!.length) {
         newBoard.lists[targetListIndex].cards!.push(cardToMove);
       } else {
@@ -94,12 +84,10 @@ export function BoardView(): React.ReactElement {
 
   function handleCardMoved(event: CustomEvent) {
     const { cardId, listId, position, userId: eventUserId } = event.detail;
-
     if (eventUserId === userId) return;
 
     setBoard(prevBoard => {
       if (!prevBoard) return prevBoard;
-
       const newBoard = moveCardInState(prevBoard, cardId, listId, position);
       newBoard!.lastUpdate = new Date().toISOString();
       return newBoard;
@@ -108,7 +96,6 @@ export function BoardView(): React.ReactElement {
 
   async function handleCreateList(name: string) {
     if (!userId || !board) return;
-
     await execute(() => apiService.createList(board.id, { name }, userId));
     setShowCreateListModal(false);
     loadBoard();
@@ -120,7 +107,6 @@ export function BoardView(): React.ReactElement {
 
   async function handleCardDrop(targetListId: string, targetPosition: number) {
     if (!draggedCard || !userId || !board) return;
-
     const sourceList = board.lists.find(l => l.id === draggedCard.sourceListId);
     const currentIndex = sourceList?.cards?.findIndex(c => c.id === draggedCard.cardId) ?? -1;
 
@@ -129,7 +115,6 @@ export function BoardView(): React.ReactElement {
         await execute(() =>
           apiService.moveCard(board.id, draggedCard.cardId, { targetListId, targetPosition }, userId)
         );
-
         setBoard(prevBoard =>
           moveCardInState(prevBoard, draggedCard.cardId, targetListId, targetPosition)
         );
@@ -150,45 +135,49 @@ export function BoardView(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      <Header showBackButton={true} onBack={() => navigate('/')} />
-      <BoardHeader
-        board={board}
-        onRefresh={loadBoard}
-        isConnected={isConnected}
-        onLeaveBoard={leaveBoard}
-      />
+    <div className="min-h-screen bg-slate-900 flex flex-col">
+      <Header showBackButton onBack={() => navigate('/')} />
+      <BoardHeader board={board} onRefresh={loadBoard} isConnected={isConnected} onLeaveBoard={leaveBoard} />
 
-      <div className="p-6 overflow-x-auto">
-        <div className="flex space-x-6 min-h-[calc(100vh-180px)]">
-          {board.lists?.map(list => (
-            <List
-              key={list.id}
-              list={list}
-              boardId={board.id}
-              onCardDragStart={handleCardDragStart}
-              onCardDrop={handleCardDrop}
-              onRefresh={loadBoard}
-            />
-          ))}
+      {/* Conteúdo principal */}
+      <div className="flex flex-1 min-h-0">
+        {/* Colunas com listas */}
+        <div className="flex-1 p-6 overflow-x-auto min-h-0">
+          <div className="flex space-x-6 min-h-full">
+            {board.lists?.map(list => (
+              <List
+                key={list.id}
+                list={list}
+                boardId={board.id}
+                onCardDragStart={handleCardDragStart}
+                onCardDrop={handleCardDrop}
+                onRefresh={loadBoard}
+              />
+            ))}
 
-          <div className="flex-shrink-0">
-            <button
-              onClick={() => setShowCreateListModal(true)}
-              className="w-72 p-4 card border-2 border-dashed border-slate-600 text-slate-400 hover:border-slate-500 hover:bg-slate-700 transition-all flex items-center justify-center space-x-2"
-            >
-              <Plus className="h-5 w-5" />
-              <span>Add a list</span>
-            </button>
+            <div className="flex-shrink-0">
+              <button
+                onClick={() => setShowCreateListModal(true)}
+                className="w-72 p-4 card border-2 border-dashed border-slate-600 text-slate-400 hover:border-slate-500 hover:bg-slate-700 transition-all flex items-center justify-center space-x-2"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Add a list</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Painel de logs fixo */}
+        <div className="w-80 bg-slate-800 border-l border-slate-700 flex flex-col">
+          {/* scroll controlado aqui */}
+          <div className="flex-1 overflow-y-auto">
+            <BoardLogsPanel boardId={board.id} />
           </div>
         </div>
       </div>
 
       {showCreateListModal && (
-        <CreateListModal
-          onClose={() => setShowCreateListModal(false)}
-          onCreate={handleCreateList}
-        />
+        <CreateListModal onClose={() => setShowCreateListModal(false)} onCreate={handleCreateList} />
       )}
     </div>
   );
