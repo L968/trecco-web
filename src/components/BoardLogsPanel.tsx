@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { BoardActionLog, Paginated } from '../types';
+import debounce from 'lodash.debounce';
 
 interface BoardLogsPanelProps {
   boardId: string;
@@ -17,33 +18,19 @@ export function BoardLogsPanel({
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { execute } = useApi();
   const { userId } = useAuth();
 
-  useEffect(() => {
-    if (!userId) return;
-    loadLogs(1, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boardId, userId]);
-
-  useEffect(() => {
-    function handleBoardLogged(event: CustomEvent) {
-      const log = event.detail as BoardActionLog;
-      setLogs(prev => [log, ...prev]);
-    }
-
-    window.addEventListener('signalr-board-logged', handleBoardLogged as EventListener);
-    return () => window.removeEventListener('signalr-board-logged', handleBoardLogged as EventListener);
-  }, []);
-
-  async function loadLogs(targetPage: number, replace: boolean = false) {
+  // Função para carregar logs com paginação e search
+  const loadLogs = async (targetPage: number, replace: boolean = false, term: string = '') => {
     if (!userId || loading) return;
     setLoading(true);
 
     try {
       const paginated: Paginated<BoardActionLog> | null = await execute(() =>
-        apiService.getBoardLogs(boardId, userId, targetPage, pageSize)
+        apiService.getBoardLogs(boardId, userId, targetPage, pageSize, term)
       );
 
       if (paginated && paginated.items.length > 0) {
@@ -51,21 +38,60 @@ export function BoardLogsPanel({
         setPage(targetPage);
         setHasMore(paginated.items.length === pageSize);
       } else {
+        if (replace) setLogs([]);
         setHasMore(false);
       }
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  // Debounce para search
+  const debouncedLoadLogs = useCallback(debounce((term: string) => {
+    loadLogs(1, true, term);
+  }, 300), [userId, boardId, pageSize]);
+
+  // Carregar logs iniciais
+  useEffect(() => {
+    if (!userId) return;
+    loadLogs(1, true, searchTerm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId, userId]);
+
+  // SignalR para logs em tempo real
+  useEffect(() => {
+    function handleBoardLogged(event: CustomEvent) {
+      const log = event.detail as BoardActionLog;
+      if (!searchTerm || log.details.toLowerCase().includes(searchTerm.toLowerCase())) {
+        setLogs(prev => [log, ...prev]);
+      }
+    }
+
+    window.addEventListener('signalr-board-logged', handleBoardLogged as EventListener);
+    return () => window.removeEventListener('signalr-board-logged', handleBoardLogged as EventListener);
+  }, [searchTerm]);
 
   function handleLoadMore() {
-    loadLogs(page + 1);
+    loadLogs(page + 1, false, searchTerm);
+  }
+
+  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const term = e.target.value;
+    setSearchTerm(term);
+    debouncedLoadLogs(term);
   }
 
   return (
     <div className="w-80 flex min-h-0 flex-col bg-slate-800 overflow-y-auto">
       <div className="px-4 py-3 border-b border-slate-700">
-        <h2 className="text-sm font-semibold text-gray-100">Activity</h2>
+        <h2 className="text-sm font-semibold text-gray-100 mb-2">Activity</h2>
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={handleSearchChange}
+          placeholder="Search logs..."
+          className="w-full px-3 py-2 text-sm bg-slate-700 text-gray-100 rounded focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder-gray-400"
+        />
       </div>
 
       <div className="px-4 py-3 overflow-y-auto flex-1">

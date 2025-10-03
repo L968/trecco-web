@@ -49,10 +49,20 @@ class ApiService {
     return response.json();
   }
 
-  async getBoardLogs(boardId: string, userId: string, page: number = 1, pageSize: number = 15): Promise<Paginated<BoardActionLog>> {
+  async getBoardLogs(
+    boardId: string,
+    userId: string,
+    page: number = 1,
+    pageSize: number = 15,
+    searchTerm: string = ''
+  ): Promise<Paginated<BoardActionLog>> {
     const url = new URL(`${API_BASE_URL}/boards/${boardId}/action-logs`);
     url.searchParams.append('page', page.toString());
     url.searchParams.append('pageSize', pageSize.toString());
+
+    if (searchTerm.trim()) {
+      url.searchParams.append('searchTerm', searchTerm.trim());
+    }
 
     const response = await fetch(url.toString(), {
       headers: this.getHeaders(userId),
