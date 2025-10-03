@@ -6,7 +6,8 @@ import {
   UpdateCardRequest,
   MoveCardRequest,
   AddMemberRequest,
-  BoardActionLog
+  BoardActionLog,
+  Paginated
 } from '../types';
 
 const API_BASE_URL = 'https://localhost:7035';
@@ -48,8 +49,12 @@ class ApiService {
     return response.json();
   }
 
-  async getBoardLogs(boardId: string, userId: string): Promise<BoardActionLog[]> {
-    const response = await fetch(`${API_BASE_URL}/boards/${boardId}/action-logs`, {
+  async getBoardLogs(boardId: string, userId: string, page: number = 1, pageSize: number = 15): Promise<Paginated<BoardActionLog>> {
+    const url = new URL(`${API_BASE_URL}/boards/${boardId}/action-logs`);
+    url.searchParams.append('page', page.toString());
+    url.searchParams.append('pageSize', pageSize.toString());
+
+    const response = await fetch(url.toString(), {
       headers: this.getHeaders(userId),
     });
 
@@ -57,7 +62,7 @@ class ApiService {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    return response.json();
+    return response.json() as Promise<Paginated<BoardActionLog>>;
   }
 
   async createBoard(request: CreateBoardRequest): Promise<void> {

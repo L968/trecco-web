@@ -43,6 +43,8 @@ export const EditCardModal: React.FC<EditCardModalProps> = ({ card, onClose, onS
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter card title"
+              minLength={3}
+              maxLength={100}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder-gray-400"
               autoFocus
             />
@@ -58,6 +60,7 @@ export const EditCardModal: React.FC<EditCardModalProps> = ({ card, onClose, onS
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter card description"
               rows={4}
+              maxLength={1000}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder-gray-400"
             />
           </div>

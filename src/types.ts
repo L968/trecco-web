@@ -62,3 +62,11 @@ export interface MoveCardRequest {
 export interface AddMemberRequest {
   userId: string;
 }
+
+export interface Paginated<T> {
+  page: number;
+  pageSize: number;
+  totalItems?: number | null;
+  totalPages?: number | null;
+  items: T[];
+}

@@ -2,21 +2,28 @@ import React, { useEffect, useState } from 'react';
 import { useApi } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { BoardActionLog } from '../types';
+import { BoardActionLog, Paginated } from '../types';
 
 interface BoardLogsPanelProps {
   boardId: string;
-  className?: string;
+  pageSize?: number;
 }
 
-export function BoardLogsPanel({ boardId, className = '' }: BoardLogsPanelProps): React.ReactElement {
+export function BoardLogsPanel({
+  boardId,
+  pageSize = 10
+}: BoardLogsPanelProps): React.ReactElement {
   const [logs, setLogs] = useState<BoardActionLog[]>([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
   const { execute } = useApi();
   const { userId } = useAuth();
 
   useEffect(() => {
     if (!userId) return;
-    loadLogs();
+    loadLogs(1, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId, userId]);
 
@@ -30,17 +37,33 @@ export function BoardLogsPanel({ boardId, className = '' }: BoardLogsPanelProps)
     return () => window.removeEventListener('signalr-board-logged', handleBoardLogged as EventListener);
   }, []);
 
-  async function loadLogs() {
-    if (!userId) return;
-    const result = await execute(() => apiService.getBoardLogs(boardId, userId));
-    if (result) {
-      const ordered = result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      setLogs(ordered);
+  async function loadLogs(targetPage: number, replace: boolean = false) {
+    if (!userId || loading) return;
+    setLoading(true);
+
+    try {
+      const paginated: Paginated<BoardActionLog> | null = await execute(() =>
+        apiService.getBoardLogs(boardId, userId, targetPage, pageSize)
+      );
+
+      if (paginated && paginated.items.length > 0) {
+        setLogs(prev => (replace ? paginated.items : [...prev, ...paginated.items]));
+        setPage(targetPage);
+        setHasMore(paginated.items.length === pageSize);
+      } else {
+        setHasMore(false);
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
+  function handleLoadMore() {
+    loadLogs(page + 1);
+  }
+
   return (
-    <div className={`flex flex-col bg-slate-800  overflow-y-auto ${className}`}>
+    <div className="w-80 flex min-h-0 flex-col bg-slate-800 overflow-y-auto">
       <div className="px-4 py-3 border-b border-slate-700">
         <h2 className="text-sm font-semibold text-gray-100">Activity</h2>
       </div>
@@ -59,6 +82,18 @@ export function BoardLogsPanel({ boardId, className = '' }: BoardLogsPanelProps)
               </li>
             ))}
           </ul>
+        )}
+
+        {hasMore && (
+          <div className="flex justify-center mt-3">
+            <button
+              onClick={handleLoadMore}
+              disabled={loading}
+              className="px-4 py-2 rounded bg-slate-600 hover:bg-slate-500 text-gray-100 transition-colors text-sm"
+            >
+              {loading ? 'Loading...' : 'Load more'}
+            </button>
+          </div>
         )}
       </div>
     </div>

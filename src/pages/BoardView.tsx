@@ -148,7 +148,7 @@ export function BoardView(): React.ReactElement {
       <BoardHeader board={board} onRefresh={loadBoard} isConnected={isConnected} onLeaveBoard={leaveBoard} />
 
       {/* Conteúdo principal */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0" style={{ maxHeight: 'calc(100vh - 53px - 73px)' }}>
         {/* Colunas com listas */}
         <div className="flex-1 p-6 overflow-x-auto min-h-0">
           <div className="flex space-x-6 min-h-full">
@@ -175,13 +175,8 @@ export function BoardView(): React.ReactElement {
           </div>
         </div>
 
-        {/* Painel de logs fixo */}
-        <div className="w-80 bg-slate-800 border-l border-slate-700 flex flex-col">
-          {/* scroll controlado aqui */}
-          <div className="flex-1 overflow-y-auto">
-            <BoardLogsPanel boardId={board.id} />
-          </div>
-        </div>
+        {/* Logs Panel */}
+        <BoardLogsPanel boardId={board.id} />
       </div>
 
       {showCreateListModal && (
