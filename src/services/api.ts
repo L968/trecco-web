@@ -72,6 +72,17 @@ class ApiService {
     }
   }
 
+  async deleteBoard(boardId: string, userId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/boards/${boardId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(userId),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+  }
+
   async createList(boardId: string, request: CreateListRequest, userId: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/boards/${boardId}/lists`, {
       method: 'POST',
