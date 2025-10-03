@@ -31,6 +31,14 @@ export function BoardView(): React.ReactElement {
   }, [userId]);
 
   useEffect(() => {
+    if (board) {
+      document.title = `Trecco | ${board.name}`;
+    } else {
+      document.title = "Trecco";
+    }
+  }, [board]);
+
+  useEffect(() => {
     if (!userId) {
       navigate('/');
       return;
