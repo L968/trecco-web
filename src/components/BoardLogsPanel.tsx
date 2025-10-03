@@ -6,7 +6,7 @@ import { BoardActionLog } from '../types';
 
 interface BoardLogsPanelProps {
   boardId: string;
-  className?: string; // parent controla largura/altura/overflow
+  className?: string;
 }
 
 export function BoardLogsPanel({ boardId, className = '' }: BoardLogsPanelProps): React.ReactElement {

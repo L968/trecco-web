@@ -84,6 +84,18 @@ class ApiService {
     }
   }
 
+  async updateListName(boardId: string, listId: string, request: { name: string }, userId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/boards/${boardId}/lists/${listId}`, {
+      method: 'PATCH',
+      headers: this.getHeaders(userId),
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+  }
+
   async deleteList(boardId: string, listId: string, userId: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/boards/${boardId}/lists/${listId}`, {
       method: 'DELETE',

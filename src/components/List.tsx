@@ -27,11 +27,20 @@ export function List({
   const [showMenu, setShowMenu] = useState(false);
   const [dragOverPosition, setDragOverPosition] = useState<number | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(list.name);
+
   const cardsContainerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
   const { userId } = useAuth();
   const { execute } = useApi();
+
+  useEffect(() => {
+    setNameInput(list.name);
+  }, [list.name]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -58,7 +67,6 @@ export function List({
     };
   }, [showMenu]);
 
-
   async function handleCreateCard(title: string, description: string) {
     if (!userId) return;
     await execute(() =>
@@ -72,6 +80,21 @@ export function List({
     if (!userId) return;
     await execute(() => apiService.deleteList(boardId, list.id, userId));
     setShowDeleteConfirm(false);
+    onRefresh();
+  }
+
+  async function handleUpdateListName() {
+    if (!userId || nameInput.trim() === '' || nameInput === list.name) {
+      setIsEditingName(false);
+      setNameInput(list.name);
+      return;
+    }
+
+    await execute(() =>
+      apiService.updateListName(boardId, list.id, { name: nameInput }, userId)
+    );
+
+    setIsEditingName(false);
     onRefresh();
   }
 
@@ -125,7 +148,29 @@ export function List({
     <div className="flex-shrink-0 w-72 relative">
       <div className={`bg-slate-800 rounded-lg p-4 border shadow-lg transition-all duration-200 ${dragOverClass}`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-100 truncate">{list.name}</h2>
+          {isEditingName ? (
+            <input
+              autoFocus
+              className="font-semibold text-gray-100 truncate bg-slate-700 rounded px-2 py-1 w-full"
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              onBlur={handleUpdateListName}
+              onKeyDown={e => {
+                if (e.key === 'Enter') handleUpdateListName();
+                if (e.key === 'Escape') {
+                  setIsEditingName(false);
+                  setNameInput(list.name);
+                }
+              }}
+            />
+          ) : (
+            <h2
+              className="font-semibold text-gray-100 truncate cursor-pointer"
+              onClick={() => setIsEditingName(true)}
+            >
+              {list.name}
+            </h2>
+          )}
 
           <div className="flex items-center space-x-2 relative">
             <span className="text-sm text-gray-300 bg-slate-700 px-2 py-1 rounded-full">
