@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
-import { Plus } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Plus, MoreVertical, Trash } from 'lucide-react';
 import { List as ListType } from '../types';
 import { Card } from './Card';
 import { CreateCardModal } from './CreateCardModal';
-import { apiService } from '../services/api';
 import { useApi } from '../hooks/useApi';
+import { apiService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ListProps {
@@ -23,11 +23,41 @@ export function List({
   onRefresh
 }: ListProps): React.ReactElement {
   const [showCreateCardModal, setShowCreateCardModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [dragOverPosition, setDragOverPosition] = useState<number | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const cardsContainerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { userId } = useAuth();
   const { execute } = useApi();
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+
+      if (
+        (menuRef.current && menuRef.current.contains(target)) ||
+        (buttonRef.current && buttonRef.current.contains(target))
+      ) {
+        return;
+      }
+
+      setShowMenu(false);
+    }
+
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showMenu]);
+
 
   async function handleCreateCard(title: string, description: string) {
     if (!userId) return;
@@ -38,9 +68,15 @@ export function List({
     onRefresh();
   }
 
+  async function handleDeleteList() {
+    if (!userId) return;
+    await execute(() => apiService.deleteList(boardId, list.id, userId));
+    setShowDeleteConfirm(false);
+    onRefresh();
+  }
+
   function getDragOverPosition(mouseY: number) {
     if (!cardsContainerRef.current) return list.cards.length;
-
     if (list.cards.length === 0) return 0;
 
     const cardElements = Array.from(cardsContainerRef.current.querySelectorAll('[data-card]')) as HTMLElement[];
@@ -86,20 +122,52 @@ export function List({
     : 'border-slate-700';
 
   return (
-    <div className="flex-shrink-0 w-72">
+    <div className="flex-shrink-0 w-72 relative">
       <div className={`bg-slate-800 rounded-lg p-4 border shadow-lg transition-all duration-200 ${dragOverClass}`}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-gray-100 truncate">{list.name}</h2>
-          <span className="text-sm text-gray-300 bg-slate-700 px-2 py-1 rounded-full">{list.cards?.length || 0}</span>
+
+          <div className="flex items-center space-x-2 relative">
+            <span className="text-sm text-gray-300 bg-slate-700 px-2 py-1 rounded-full">
+              {list.cards?.length || 0}
+            </span>
+
+            {/* Botão menu */}
+            <button
+              ref={buttonRef}
+              onClick={() => setShowMenu(prev => !prev)}
+              className="p-1 rounded hover:bg-slate-700 transition-colors"
+            >
+              <MoreVertical className="w-4 h-4 text-gray-300" />
+            </button>
+
+            {/* Dropdown menu */}
+            {showMenu && (
+              <div
+                ref={menuRef}
+                className="absolute top-8 left-8 w-40 bg-slate-800 border border-slate-700 rounded-lg shadow-lg z-20 origin-top-right"
+              >
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    setShowDeleteConfirm(true);
+                  }}
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-400 hover:bg-red-600/20 rounded-t-lg justify-start"
+                >
+                  <Trash className="w-4 h-4" />
+                  <span>Delete list</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div
           ref={cardsContainerRef}
-          className={`space-y-3 min-h-2 transition-all duration-200 ${
-            list.cards.length === 0 && isDragOver
-              ? 'min-h-20 bg-blue-900/20 border-2 border-dashed border-blue-400 rounded-lg flex items-center justify-center'
-              : ''
-          }`}
+          className={`space-y-3 min-h-2 transition-all duration-200 ${list.cards.length === 0 && isDragOver
+            ? 'min-h-20 bg-blue-900/20 border-2 border-dashed border-blue-400 rounded-lg flex items-center justify-center'
+            : ''
+            }`}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onDragLeave={handleDragLeave}
@@ -145,6 +213,33 @@ export function List({
           onClose={() => setShowCreateCardModal(false)}
           onCreate={handleCreateCard}
         />
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-slate-800 rounded-lg p-6 w-96 shadow-xl border border-slate-700">
+            <h3 className="text-lg font-semibold text-gray-100 mb-4">Delete list</h3>
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to delete the list <strong>{list.name}</strong>?
+              This action cannot be undone.
+            </p>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 rounded bg-slate-600 hover:bg-slate-500 text-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteList}
+                className="px-4 py-2 rounded bg-red-600 hover:bg-red-500 text-white"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

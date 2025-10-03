@@ -1,4 +1,13 @@
-import { Board, CreateBoardRequest, CreateListRequest, CreateCardRequest, UpdateCardRequest, MoveCardRequest, AddMemberRequest, BoardActionLog } from '../types';
+import {
+  Board,
+  CreateBoardRequest,
+  CreateListRequest,
+  CreateCardRequest,
+  UpdateCardRequest,
+  MoveCardRequest,
+  AddMemberRequest,
+  BoardActionLog
+} from '../types';
 
 const API_BASE_URL = 'https://localhost:7035';
 
@@ -68,6 +77,17 @@ class ApiService {
       method: 'POST',
       headers: this.getHeaders(userId),
       body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+  }
+
+  async deleteList(boardId: string, listId: string, userId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/boards/${boardId}/lists/${listId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(userId),
     });
 
     if (!response.ok) {
