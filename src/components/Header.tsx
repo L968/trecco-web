@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trello, LogOut, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,12 +14,21 @@ export function Header({
 }: HeaderProps): React.ReactElement {
   const { userId, logout } = useAuth();
   const navigate = useNavigate();
+  const [copied, setCopied] = useState(false);
 
   function handleBack() {
     if (onBack) {
       onBack();
     } else {
       navigate('/');
+    }
+  }
+
+  function handleCopyUserId() {
+    if (userId) {
+      navigator.clipboard.writeText(userId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   }
 
@@ -47,9 +56,19 @@ export function Header({
 
         {/* Right side - User info and logout */}
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 text-sm text-gray-400">
+          <div
+            className="relative flex items-center space-x-2 text-sm text-gray-400 cursor-pointer hover:text-gray-200 transition-colors"
+            onClick={handleCopyUserId}
+            title="Click to copy User ID"
+          >
             <User className="h-4 w-4" />
             <span>User: {userId?.substring(0, 8)}...</span>
+
+            {copied && (
+              <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-green-700 text-green-100 text-xs px-2 py-1 rounded shadow">
+                Copied!
+              </span>
+            )}
           </div>
 
           <button
