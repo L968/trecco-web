@@ -42,6 +42,7 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({ onClose, onCre
               placeholder="Enter list name"
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder-gray-400"
               autoFocus
+              autoComplete='off'
             />
           </div>
 
